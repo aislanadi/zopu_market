@@ -1,0 +1,26 @@
+{
+  "query": "SELECT * FROM categories;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute SELECT * FROM categories;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Licenças Bitrix24",
+      "description": "Licenças e planos Bitrix24",
+      "icon": "NULL",
+      "createdAt": "2025-12-05 22:27:42",
+      "updatedAt": "2025-12-05 22:27:42"
+    },
+    {
+      "id": "30001",
+      "name": "Aplicativos Bitrix24",
+      "description": "Aplicativos do ecossistema Bitrix24",
+      "icon": "NULL",
+      "createdAt": "2025-12-05 22:58:09",
+      "updatedAt": "2025-12-05 22:58:09"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tdescription\ticon\tcreatedAt\tupdatedAt\n1\tLicenças Bitrix24\tLicenças e planos Bitrix24\tNULL\t2025-12-05 22:27:42\t2025-12-05 22:27:42\n30001\tAplicativos Bitrix24\tAplicativos do ecossistema Bitrix24\tNULL\t2025-12-05 22:58:09\t2025-12-05 22:58:09\n",
+  "stderr": "",
+  "execution_time_ms": 103
+}

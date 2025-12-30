@@ -1,0 +1,1 @@
+ALTER TABLE `serviceContracts` MODIFY COLUMN `userId` int NOT NULL;

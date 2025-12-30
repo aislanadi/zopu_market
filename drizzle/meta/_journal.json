@@ -1,0 +1,167 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1764970156891,
+      "tag": "0000_striped_marvel_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1764970403931,
+      "tag": "0001_nappy_karnak",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1764978695282,
+      "tag": "0002_striped_silver_fox",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1764982989549,
+      "tag": "0003_pretty_morlocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1764984361085,
+      "tag": "0004_tan_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1764984592162,
+      "tag": "0005_sudden_captain_midlands",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1764985814251,
+      "tag": "0006_young_karen_page",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1764986213289,
+      "tag": "0007_melodic_falcon",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1764986349212,
+      "tag": "0008_normal_doomsday",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1764988587068,
+      "tag": "0009_cynical_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1764990889418,
+      "tag": "0010_unknown_gladiator",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1764992063228,
+      "tag": "0011_tricky_ultimates",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1765024222530,
+      "tag": "0012_slippery_true_believers",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1765027510249,
+      "tag": "0013_cheerful_zzzax",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1765028243120,
+      "tag": "0014_spicy_lilandra",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1765029359060,
+      "tag": "0015_material_war_machine",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1765030862162,
+      "tag": "0016_colossal_magik",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1765031129759,
+      "tag": "0017_unique_menace",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1765034366569,
+      "tag": "0018_giant_marvel_zombies",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1766800537694,
+      "tag": "0019_cynical_jetstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1766977944729,
+      "tag": "0020_friendly_screwball",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1766981354416,
+      "tag": "0021_minor_wallop",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1766987467102,
+      "tag": "0022_powerful_chimera",
+      "breakpoints": true
+    }
+  ]
+}

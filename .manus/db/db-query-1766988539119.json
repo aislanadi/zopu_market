@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, email, name, role, partnerId FROM users WHERE email = 'contato@somosamarna.com.br';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute SELECT id, email, name, role, partnerId FROM users WHERE email = 'contato@somosamarna.com.br';",
+  "rows": [
+    {
+      "id": "2550099",
+      "email": "contato@somosamarna.com.br",
+      "name": "Roberval",
+      "role": "parceiro",
+      "partnerId": "180001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\trole\tpartnerId\n2550099\tcontato@somosamarna.com.br\tRoberval\tparceiro\t180001\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

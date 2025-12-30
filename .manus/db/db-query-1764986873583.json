@@ -1,0 +1,22 @@
+{
+  "query": "SELECT * FROM serviceContracts ORDER BY createdAt DESC LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute SELECT * FROM serviceContracts ORDER BY createdAt DESC LIMIT 5",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "offerId": "2",
+      "partnerId": "2",
+      "contractDate": "2024-11-15 00:00:00",
+      "value": "R$ 85.000,00",
+      "period": "8 semanas",
+      "comments": "Contratei o desenvolvimento de um aplicativo personalizado para gestão de contratos. Projeto foi entregue conforme o combinado.",
+      "verified": "0",
+      "createdAt": "2025-12-06 02:07:08"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tofferId\tpartnerId\tcontractDate\tvalue\tperiod\tcomments\tverified\tcreatedAt\n1\t1\t2\t2\t2024-11-15 00:00:00\tR$ 85.000,00\t8 semanas\tContratei o desenvolvimento de um aplicativo personalizado para gestão de contratos. Projeto foi entregue conforme o combinado.\t0\t2025-12-06 02:07:08\n",
+  "stderr": "",
+  "execution_time_ms": 84
+}

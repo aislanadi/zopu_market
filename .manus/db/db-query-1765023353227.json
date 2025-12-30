@@ -1,0 +1,25 @@
+{
+  "query": "SELECT id, title, status FROM offers LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute SELECT id, title, status FROM offers LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "title": "Licença Bitrix24 Professional - 50 Usuários",
+      "status": "PUBLISHED"
+    },
+    {
+      "id": "2",
+      "title": "Aplicativo Bitrix24 Personalizado - Gestão de Contratos",
+      "status": "PUBLISHED"
+    },
+    {
+      "id": "3",
+      "title": "Consultoria em Automação de Processos Empresariais",
+      "status": "PUBLISHED"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tstatus\n1\tLicença Bitrix24 Professional - 50 Usuários\tPUBLISHED\n2\tAplicativo Bitrix24 Personalizado - Gestão de Contratos\tPUBLISHED\n3\tConsultoria em Automação de Processos Empresariais\tPUBLISHED\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

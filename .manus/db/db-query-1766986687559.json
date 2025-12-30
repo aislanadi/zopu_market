@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE users SET partnerId = (SELECT id FROM partners WHERE cnpj LIKE '%44621554%' LIMIT 1) WHERE email = 'aislan.borba@zopu.com.br'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute UPDATE users SET partnerId = (SELECT id FROM partners WHERE cnpj LIKE '%44621554%' LIMIT 1) WHERE email = 'aislan.borba@zopu.com.br'",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 55
+}

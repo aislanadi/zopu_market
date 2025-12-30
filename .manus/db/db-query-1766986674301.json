@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, companyName, cnpj, contactEmail FROM partners WHERE cnpj LIKE '%44621554%' OR companyName LIKE '%ZOPU%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute SELECT id, companyName, cnpj, contactEmail FROM partners WHERE cnpj LIKE '%44621554%' OR companyName LIKE '%ZOPU%'",
+  "rows": [
+    {
+      "id": "1",
+      "companyName": "ZOPU",
+      "cnpj": "44621554000181",
+      "contactEmail": "comercial@zopu.com.br"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcompanyName\tcnpj\tcontactEmail\n1\tZOPU\t44621554000181\tcomercial@zopu.com.br\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

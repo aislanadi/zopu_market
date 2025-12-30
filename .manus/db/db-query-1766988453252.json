@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, companyName, contactEmail, contactName FROM partners WHERE companyName LIKE '%Applepie%' OR companyName LIKE '%Amarna%' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute SELECT id, companyName, contactEmail, contactName FROM partners WHERE companyName LIKE '%Applepie%' OR companyName LIKE '%Amarna%' LIMIT 5;",
+  "rows": [
+    {
+      "id": "180001",
+      "companyName": "Applepie ",
+      "contactEmail": "contato@somosamarna.com.br",
+      "contactName": "Roberval"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcompanyName\tcontactEmail\tcontactName\n180001\tApplepie \tcontato@somosamarna.com.br\tRoberval\n",
+  "stderr": "",
+  "execution_time_ms": 230
+}

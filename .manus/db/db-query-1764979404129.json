@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO partners (companyName, cnpj, legalName, mainCategoryId, contactName, contactEmail, contactPhone, curationStatus, createdAt, updatedAt) \nVALUES \n('TechSolutions Brasil', '12.345.678/0001-90', 'TechSolutions Brasil Tecnologia Ltda', 1, 'João Silva', 'joao@techsolutions.com.br', '(11) 98765-4321', 'APPROVED', NOW(), NOW()),\n('Bitrix Partners', '98.765.432/0001-10', 'Bitrix Partners Consultoria Ltda', 2, 'Maria Santos', 'maria@bitrixpartners.com.br', '(21) 99876-5432', 'APPROVED', NOW(), NOW()),\n('AutomaTech', '11.222.333/0001-44', 'AutomaTech Soluções em Automação SA', 1, 'Carlos Oliveira', 'carlos@automatech.com.br', '(11) 97654-3210', 'APPROVED', NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute INSERT INTO partners (companyName, cnpj, legalName, mainCategoryId, contactName, contactEmail, contactPhone, curationStatus, createdAt, updatedAt) \nVALUES \n('TechSolutions Brasil', '12.345.678/0001-90', 'TechSolutions Brasil Tecnologia Ltda', 1, 'João Silva', 'joao@techsolutions.com.br', '(11) 98765-4321', 'APPROVED', NOW(), NOW()),\n('Bitrix Partners', '98.765.432/0001-10', 'Bitrix Partners Consultoria Ltda', 2, 'Maria Santos', 'maria@bitrixpartners.com.br', '(21) 99876-5432', 'APPROVED', NOW(), NOW()),\n('AutomaTech', '11.222.333/0001-44', 'AutomaTech Soluções em Automação SA', 1, 'Carlos Oliveira', 'carlos@automatech.com.br', '(11) 97654-3210', 'APPROVED', NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 66
+}

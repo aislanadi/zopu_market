@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, title, partnerId FROM offers WHERE id = 2",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute SELECT id, title, partnerId FROM offers WHERE id = 2",
+  "rows": [
+    {
+      "id": "2",
+      "title": "Aplicativo Bitrix24 Personalizado - Gestão de Contratos",
+      "partnerId": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tpartnerId\n2\tAplicativo Bitrix24 Personalizado - Gestão de Contratos\t2\n",
+  "stderr": "",
+  "execution_time_ms": 46
+}

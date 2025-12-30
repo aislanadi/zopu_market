@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE users \nSET passwordHash = '$2b$10$tXY.TyHYAu/EnHrxDxTXTOsx1UspsB.oDtivPqxlwnrwY5Te0Y9T.', \n    loginMethod = 'email',\n    updatedAt = NOW()\nWHERE email = 'contato@somosamarna.com.br';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute UPDATE users \nSET passwordHash = '$2b$10$tXY.TyHYAu/EnHrxDxTXTOsx1UspsB.oDtivPqxlwnrwY5Te0Y9T.', \n    loginMethod = 'email',\n    updatedAt = NOW()\nWHERE email = 'contato@somosamarna.com.br';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 54
+}

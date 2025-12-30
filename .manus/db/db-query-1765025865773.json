@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, openId, name, email, role, partnerId FROM users ORDER BY id DESC LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 1QbYwygaUrXobZv.root --database do3nvyFR39bifr2CG3NnaS --execute SELECT id, openId, name, email, role, partnerId FROM users ORDER BY id DESC LIMIT 1",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "Wmm7583qV6FoKkpBN83hoB",
+      "name": "Aislan Borba",
+      "email": "aislan.borba@zopu.com.br",
+      "role": "admin",
+      "partnerId": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\trole\tpartnerId\n1\tWmm7583qV6FoKkpBN83hoB\tAislan Borba\taislan.borba@zopu.com.br\tadmin\t1\n",
+  "stderr": "",
+  "execution_time_ms": 59
+}
