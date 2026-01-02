@@ -250,10 +250,10 @@ const partnerRouter = router({
         }
 
         const { sendEmail, getPartnerApprovedEmailTemplate } = await import("./_core/email");
-        
+
         // Enviar email de aprovação
-        // O usuário será associado automaticamente ao parceiro no primeiro login
-        const loginUrl = `${process.env.VITE_OAUTH_PORTAL_URL || "https://oauth.manus.im"}/login`;
+        const appUrl = process.env.APP_URL || "https://zopumarket.com";
+        const loginUrl = `${appUrl}/login`;
         const emailTemplate = getPartnerApprovedEmailTemplate({
           partnerName: partner.contactName || "Parceiro",
           companyName: partner.companyName,
@@ -1119,22 +1119,22 @@ const reviewRouter = router({
 
 const notificationRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return await db.getNotificationsByUser(ctx.user.openId || "");
+    return await db.getNotificationsByUser(String(ctx.user.id));
   }),
-  
+
   unreadCount: protectedProcedure.query(async ({ ctx }) => {
-    return await db.getUnreadNotificationsCount(ctx.user.openId || "");
+    return await db.getUnreadNotificationsCount(String(ctx.user.id));
   }),
-  
+
   markAsRead: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await db.markNotificationAsRead(input.id);
       return { success: true };
     }),
-  
+
   markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
-    await db.markAllNotificationsAsRead(ctx.user.openId || "");
+    await db.markAllNotificationsAsRead(String(ctx.user.id));
     return { success: true };
   }),
 });
@@ -1148,7 +1148,7 @@ const favoriteRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       await db.addFavorite(
-        ctx.user.openId || "",
+        String(ctx.user.id),
         input.offerId || null,
         input.partnerId || null,
         input.type
@@ -1163,7 +1163,7 @@ const favoriteRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       await db.removeFavorite(
-        ctx.user.openId || "",
+        String(ctx.user.id),
         input.offerId || null,
         input.partnerId || null
       );
@@ -1172,7 +1172,7 @@ const favoriteRouter = router({
 
   list: protectedProcedure
     .query(async ({ ctx }) => {
-      return await db.getFavoritesByUser(ctx.user.openId || "");
+      return await db.getFavoritesByUser(String(ctx.user.id));
     }),
 
   check: protectedProcedure
@@ -1182,7 +1182,7 @@ const favoriteRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       const isFav = await db.isFavorite(
-        ctx.user.openId || "",
+        String(ctx.user.id),
         input.offerId || null,
         input.partnerId || null
       );
@@ -1202,17 +1202,18 @@ const invitationRouter = router({
       const { token, expiresAt } = await db.createUserInvitation({
         email: input.email,
         name: input.name,
-        createdBy: ctx.user.openId || "",
+        createdBy: String(ctx.user.id),
       });
-      
-      // TODO: Enviar email com link de convite
-      const inviteLink = `${process.env.VITE_OAUTH_PORTAL_URL || 'http://localhost:3000'}/register/${token}`;
-      
-      return { 
-        success: true, 
-        token, 
+
+      // Generate invite link
+      const appUrl = process.env.APP_URL || "https://zopumarket.com";
+      const inviteLink = `${appUrl}/register/${token}`;
+
+      return {
+        success: true,
+        token,
         inviteLink,
-        expiresAt 
+        expiresAt
       };
     }),
     

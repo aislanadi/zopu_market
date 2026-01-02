@@ -1,6 +1,5 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
-import { sdk } from "./sdk";
 import { jwtVerify } from "jose";
 import { ENV } from "./env";
 import { COOKIE_NAME } from "@shared/const";
@@ -44,20 +43,8 @@ async function authenticateLocalToken(req: CreateExpressContextOptions["req"]): 
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  let user: User | null = null;
-
-  // Try local authentication first (JWT token from email/password login)
-  user = await authenticateLocalToken(opts.req);
-
-  // Fallback to OAuth authentication if local auth failed
-  if (!user) {
-    try {
-      user = await sdk.authenticateRequest(opts.req);
-    } catch {
-      // Authentication is optional for public procedures.
-      user = null;
-    }
-  }
+  // Authenticate using local JWT token
+  const user = await authenticateLocalToken(opts.req);
 
   return {
     req: opts.req,
