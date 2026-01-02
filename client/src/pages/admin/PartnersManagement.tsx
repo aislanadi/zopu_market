@@ -131,10 +131,12 @@ export default function PartnersManagement() {
     const response = await fetch("/api/upload", {
       method: "POST",
       body: formData,
+      credentials: "include", // Include cookies for authentication
     });
 
     if (!response.ok) {
-      throw new Error("Erro ao fazer upload do logo");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Erro ao fazer upload do logo");
     }
 
     const data = await response.json();
@@ -173,6 +175,11 @@ export default function PartnersManagement() {
         logoUrl = await uploadLogoToS3(logoFile);
       }
 
+      // Check if status is changing - if so, use updateCurationStatus to trigger user creation
+      const currentPartner = partners?.find(p => p.id === editingPartnerId);
+      const statusChanged = currentPartner && currentPartner.curationStatus !== formData.curationStatus;
+
+      // Update profile data (without curationStatus if it's changing)
       await updatePartnerMutation.mutateAsync({
         id: editingPartnerId,
         companyName: formData.companyName,
@@ -184,8 +191,14 @@ export default function PartnersManagement() {
         contactPhone: formData.contactPhone || undefined,
         institutionalVideoUrl: formData.institutionalVideoUrl || undefined,
         logoUrl: logoUrl || undefined,
-        curationStatus: formData.curationStatus,
+        // Only include curationStatus if not changing (to avoid duplicate update)
+        ...(!statusChanged && { curationStatus: formData.curationStatus }),
       });
+
+      // If status changed, use updateCurationStatus to properly trigger user creation
+      if (statusChanged) {
+        await updateStatusMutation.mutateAsync({ id: editingPartnerId, status: formData.curationStatus });
+      }
     } catch (error) {
       console.error("Erro ao atualizar parceiro:", error);
       toast.error("Erro ao atualizar parceiro");

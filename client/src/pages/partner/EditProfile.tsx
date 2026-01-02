@@ -97,10 +97,12 @@ export default function EditPartnerProfile() {
     const response = await fetch("/api/upload", {
       method: "POST",
       body: formData,
+      credentials: "include",
     });
 
     if (!response.ok) {
-      throw new Error("Erro ao fazer upload do logo");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Erro ao fazer upload do logo");
     }
 
     const data = await response.json();

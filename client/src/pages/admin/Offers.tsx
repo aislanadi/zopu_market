@@ -157,10 +157,12 @@ export default function Offers() {
     const response = await fetch("/api/upload", {
       method: "POST",
       body: formData,
+      credentials: "include",
     });
 
     if (!response.ok) {
-      throw new Error("Erro ao fazer upload da imagem");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Erro ao fazer upload da imagem");
     }
 
     const data = await response.json();
