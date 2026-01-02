@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import * as Select from "@radix-ui/react-select";
@@ -72,94 +72,145 @@ export default function Catalog() {
     { id: "educacao", name: "Educação", count: 19 },
   ];
 
-  // Calcular rating médio de um parceiro baseado nos reviews
-  const getPartnerRating = (partnerId: number | null): number => {
-    if (!partnerId || !allReviews) return 0;
-    const partnerReviews = allReviews.filter(r => r.partnerId === partnerId);
-    if (partnerReviews.length === 0) return 0;
-    const sum = partnerReviews.reduce((acc, r) => acc + r.rating, 0);
-    return sum / partnerReviews.length;
-  };
+  // Pre-calculate all partner ratings once (performance optimization)
+  const partnerRatingsMap = useMemo(() => {
+    if (!allReviews) return new Map<number, { avg: number; count: number }>();
 
-  // Filtrar ofertas
-  const filteredOffers = offers?.filter((offer) => {
-    const matchesSearch = !searchQuery || 
-      offer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      offer.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = !selectedCategory || offer.categoryId === selectedCategory;
-    
-    const matchesPartner = !selectedPartner || offer.partnerId === selectedPartner;
-    
-    const partnerRating = getPartnerRating(offer.partnerId);
-    const matchesRating = !minRating || partnerRating >= minRating;
-    
-    // Filtro de preço
-    const price = offer.price;
-    const matchesPrice = (!minPrice || !price || price >= minPrice) && 
-                         (!maxPrice || !price || price <= maxPrice);
-    
-    // Filtro de ecossistema
-    const partner = partners?.find(p => p.id === offer.partnerId);
-    const matchesEcosystem = !selectedEcosystem || 
-      (partner?.ecosystems && partner.ecosystems.toLowerCase().includes(selectedEcosystem.toLowerCase()));
-    
-    // Filtro de localização
-    const matchesState = !selectedState || partner?.state === selectedState;
-    const matchesCity = !selectedCity || partner?.city === selectedCity;
-    
-    // Filtro de badges
-    const matchesBadges = selectedBadges.length === 0 || (() => {
-      if (!partner?.badges) return false;
-      try {
-        const partnerBadges = JSON.parse(partner.badges);
-        return selectedBadges.every(badge => partnerBadges.includes(badge));
-      } catch {
-        return false;
-      }
-    })();
-    
-    return matchesSearch && matchesCategory && matchesPartner && matchesRating && matchesPrice && 
-           matchesEcosystem && matchesState && matchesCity && matchesBadges;
-  });
+    const ratingsData = new Map<number, { sum: number; count: number }>();
+    allReviews.forEach(r => {
+      const current = ratingsData.get(r.partnerId) || { sum: 0, count: 0 };
+      ratingsData.set(r.partnerId, {
+        sum: current.sum + r.rating,
+        count: current.count + 1
+      });
+    });
 
-  // Ordenar ofertas
-  const sortedOffers = filteredOffers?.sort((a, b) => {
-    switch (sortBy) {
-      case "price_asc":
-        // Ofertas sem preço (sob consulta) vão para o final
-        if (!a.price) return 1;
-        if (!b.price) return -1;
-        return a.price - b.price;
-      
-      case "price_desc":
-        if (!a.price) return 1;
-        if (!b.price) return -1;
-        return b.price - a.price;
-      
-      case "rating":
-        const ratingA = getPartnerRating(a.partnerId);
-        const ratingB = getPartnerRating(b.partnerId);
-        return ratingB - ratingA;
-      
-      case "recent":
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      
-      case "relevance":
-      default:
-        // Ordenar por rating primeiro, depois por data
-        const rA = getPartnerRating(a.partnerId);
-        const rB = getPartnerRating(b.partnerId);
-        if (rB !== rA) return rB - rA;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-  });
+    const result = new Map<number, { avg: number; count: number }>();
+    ratingsData.forEach((value, key) => {
+      result.set(key, { avg: value.sum / value.count, count: value.count });
+    });
+    return result;
+  }, [allReviews]);
 
-  // Mock: pegar parceiro da oferta (depois vamos fazer join no backend)
-  const getPartnerForOffer = (partnerId: number | null) => {
+  // Get partner rating from pre-calculated map (O(1) lookup instead of O(n) filter)
+  const getPartnerRating = useCallback((partnerId: number | null): number => {
+    if (!partnerId) return 0;
+    return partnerRatingsMap.get(partnerId)?.avg || 0;
+  }, [partnerRatingsMap]);
+
+  // Get review count for a partner
+  const getPartnerReviewCount = useCallback((partnerId: number | null): number => {
+    if (!partnerId) return 0;
+    return partnerRatingsMap.get(partnerId)?.count || 0;
+  }, [partnerRatingsMap]);
+
+  // Pre-calculate partner lookup map for O(1) access
+  const partnersMap = useMemo(() => {
+    if (!partners) return new Map();
+    return new Map(partners.map(p => [p.id, p]));
+  }, [partners]);
+
+  // Memoized partner lookup function
+  const getPartnerForOffer = useCallback((partnerId: number | null) => {
     if (!partnerId) return null;
-    return partners?.find(p => p.id === partnerId);
-  };
+    return partnersMap.get(partnerId) || null;
+  }, [partnersMap]);
+
+  // Pre-parse partner badges for efficient filtering
+  const partnerBadgesMap = useMemo(() => {
+    if (!partners) return new Map<number, string[]>();
+    const map = new Map<number, string[]>();
+    partners.forEach(p => {
+      if (p.badges) {
+        try {
+          map.set(p.id, JSON.parse(p.badges));
+        } catch {
+          map.set(p.id, []);
+        }
+      }
+    });
+    return map;
+  }, [partners]);
+
+  // Memoized filtered offers (prevents recalculation on every render)
+  const filteredOffers = useMemo(() => {
+    if (!offers) return [];
+
+    return offers.filter((offer) => {
+      const matchesSearch = !searchQuery ||
+        offer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        offer.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesCategory = !selectedCategory || offer.categoryId === selectedCategory;
+      const matchesPartner = !selectedPartner || offer.partnerId === selectedPartner;
+
+      const partnerRating = getPartnerRating(offer.partnerId);
+      const matchesRating = !minRating || partnerRating >= minRating;
+
+      // Filtro de preço
+      const price = offer.price;
+      const matchesPrice = (!minPrice || !price || price >= minPrice) &&
+                           (!maxPrice || !price || price <= maxPrice);
+
+      // Get partner from map (O(1) instead of O(n))
+      const partner = offer.partnerId ? partnersMap.get(offer.partnerId) : null;
+
+      // Filtro de ecossistema
+      const matchesEcosystem = !selectedEcosystem ||
+        (partner?.ecosystems && partner.ecosystems.toLowerCase().includes(selectedEcosystem.toLowerCase()));
+
+      // Filtro de localização
+      const matchesState = !selectedState || partner?.state === selectedState;
+      const matchesCity = !selectedCity || partner?.city === selectedCity;
+
+      // Filtro de badges (use pre-parsed badges map)
+      const matchesBadges = selectedBadges.length === 0 || (() => {
+        if (!offer.partnerId) return false;
+        const badges = partnerBadgesMap.get(offer.partnerId) || [];
+        return selectedBadges.every(badge => badges.includes(badge));
+      })();
+
+      return matchesSearch && matchesCategory && matchesPartner && matchesRating && matchesPrice &&
+             matchesEcosystem && matchesState && matchesCity && matchesBadges;
+    });
+  }, [offers, searchQuery, selectedCategory, selectedPartner, minRating, minPrice, maxPrice,
+      selectedEcosystem, selectedState, selectedCity, selectedBadges, partnersMap, partnerBadgesMap, getPartnerRating]);
+
+  // Memoized sorted offers (prevents re-sorting on every render)
+  const sortedOffers = useMemo(() => {
+    if (!filteredOffers || filteredOffers.length === 0) return [];
+
+    return [...filteredOffers].sort((a, b) => {
+      switch (sortBy) {
+        case "price_asc":
+          if (!a.price) return 1;
+          if (!b.price) return -1;
+          return a.price - b.price;
+
+        case "price_desc":
+          if (!a.price) return 1;
+          if (!b.price) return -1;
+          return b.price - a.price;
+
+        case "rating": {
+          const ratingA = getPartnerRating(a.partnerId);
+          const ratingB = getPartnerRating(b.partnerId);
+          return ratingB - ratingA;
+        }
+
+        case "recent":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+
+        case "relevance":
+        default: {
+          const rA = getPartnerRating(a.partnerId);
+          const rB = getPartnerRating(b.partnerId);
+          if (rB !== rA) return rB - rA;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+      }
+    });
+  }, [filteredOffers, sortBy, getPartnerRating]);
 
   return (
     <div className="min-h-screen bg-background">

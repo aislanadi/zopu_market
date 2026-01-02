@@ -1,14 +1,14 @@
 import { eq, and, or, desc, sql, gte, lte, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { 
-  InsertUser, 
-  users, 
-  categories, 
-  partners, 
-  offers, 
-  leadRequests, 
-  referrals, 
-  orders, 
+import {
+  InsertUser,
+  users,
+  categories,
+  partners,
+  offers,
+  leadRequests,
+  referrals,
+  orders,
   auditLogs,
   reviews,
   favorites,
@@ -23,6 +23,7 @@ import {
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
+// Database instance (drizzle manages connection pooling internally)
 let _db: ReturnType<typeof drizzle> | null = null;
 
 /**
@@ -41,6 +42,7 @@ function safeJsonParse<T>(json: string | null | undefined, defaultValue: T): T {
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
+      // Drizzle with mysql2 handles connection pooling internally
       _db = drizzle(process.env.DATABASE_URL);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
@@ -906,56 +908,59 @@ export async function updateCommunityFavoriteBadges() {
 export async function unifiedSearch(query: string) {
   const database = await getDb();
   if (!database) throw new Error("Database not available");
-  
+
   const searchTerm = `%${query.toLowerCase()}%`;
 
-  // Search offers
-  const offerResults = await database
-    .select({
-      id: offers.id,
-      title: offers.title,
-      description: offers.description,
-      partnerName: partners.companyName,
-    })
-    .from(offers)
-    .leftJoin(partners, eq(offers.partnerId, partners.id))
-    .where(
-      and(
-        eq(offers.status, "PUBLISHED"),
-        or(
-          sql`LOWER(${offers.title}) LIKE ${searchTerm}`,
-          sql`LOWER(${offers.description}) LIKE ${searchTerm}`
+  // Execute all searches in parallel for better performance
+  const [offerResults, partnerResults, categoryResults] = await Promise.all([
+    // Search offers
+    database
+      .select({
+        id: offers.id,
+        title: offers.title,
+        description: offers.description,
+        partnerName: partners.companyName,
+      })
+      .from(offers)
+      .leftJoin(partners, eq(offers.partnerId, partners.id))
+      .where(
+        and(
+          eq(offers.status, "PUBLISHED"),
+          or(
+            sql`LOWER(${offers.title}) LIKE ${searchTerm}`,
+            sql`LOWER(${offers.description}) LIKE ${searchTerm}`
+          )
         )
       )
-    )
-    .limit(5);
+      .limit(5),
 
-  // Search partners
-  const partnerResults = await database
-    .select({
-      id: partners.id,
-      companyName: partners.companyName,
-      description: partners.description,
-    })
-    .from(partners)
-    .where(
-      or(
-        sql`LOWER(${partners.companyName}) LIKE ${searchTerm}`,
-        sql`LOWER(${partners.description}) LIKE ${searchTerm}`
+    // Search partners
+    database
+      .select({
+        id: partners.id,
+        companyName: partners.companyName,
+        description: partners.description,
+      })
+      .from(partners)
+      .where(
+        or(
+          sql`LOWER(${partners.companyName}) LIKE ${searchTerm}`,
+          sql`LOWER(${partners.description}) LIKE ${searchTerm}`
+        )
       )
-    )
-    .limit(5);
+      .limit(5),
 
-  // Search categories
-  const categoryResults = await database
-    .select({
-      id: categories.id,
-      name: categories.name,
-      description: categories.description,
-    })
-    .from(categories)
-    .where(sql`LOWER(${categories.name}) LIKE ${searchTerm}`)
-    .limit(3);
+    // Search categories
+    database
+      .select({
+        id: categories.id,
+        name: categories.name,
+        description: categories.description,
+      })
+      .from(categories)
+      .where(sql`LOWER(${categories.name}) LIKE ${searchTerm}`)
+      .limit(3),
+  ]);
 
   return {
     offers: offerResults,
@@ -988,113 +993,126 @@ export async function getPartnerMetrics(partnerId: number, startDate?: Date, end
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const dateFilter = startDate && endDate 
+  const dateFilter = startDate && endDate
     ? and(
         gte(analytics.createdAt, startDate),
         lte(analytics.createdAt, endDate)
       )
     : undefined;
 
-  // Profile views over time
-  const profileViews = await db
-    .select({
-      date: sql<string>`DATE(${analytics.createdAt})`.as('view_date'),
-      count: sql<number>`COUNT(*)`,
-    })
-    .from(analytics)
-    .where(
-      and(
-        eq(analytics.partnerId, partnerId),
-        eq(analytics.eventType, "profile_view"),
-        dateFilter
+  // Execute all 7 queries in parallel for better performance
+  const [
+    profileViews,
+    leadsByOffer,
+    whatsappClicks,
+    totalViews,
+    totalLeads,
+    totalWhatsAppClicks,
+    ratingEvolution,
+  ] = await Promise.all([
+    // Profile views over time
+    db
+      .select({
+        date: sql<string>`DATE(${analytics.createdAt})`.as('view_date'),
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(analytics)
+      .where(
+        and(
+          eq(analytics.partnerId, partnerId),
+          eq(analytics.eventType, "profile_view"),
+          dateFilter
+        )
       )
-    )
-    .groupBy(sql`view_date`)
-    .orderBy(sql`view_date`);
+      .groupBy(sql`view_date`)
+      .orderBy(sql`view_date`),
 
-  // Leads generated by offer
-  const leadsByOffer = await db
-    .select({
-      offerId: analytics.offerId,
-      offerTitle: offers.title,
-      count: sql<number>`COUNT(*)`,
-    })
-    .from(analytics)
-    .leftJoin(offers, eq(analytics.offerId, offers.id))
-    .where(
-      and(
-        eq(analytics.partnerId, partnerId),
-        eq(analytics.eventType, "lead_generated"),
-        dateFilter
+    // Leads generated by offer
+    db
+      .select({
+        offerId: analytics.offerId,
+        offerTitle: offers.title,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(analytics)
+      .leftJoin(offers, eq(analytics.offerId, offers.id))
+      .where(
+        and(
+          eq(analytics.partnerId, partnerId),
+          eq(analytics.eventType, "lead_generated"),
+          dateFilter
+        )
       )
-    )
-    .groupBy(analytics.offerId, offers.title);
+      .groupBy(analytics.offerId, offers.title),
 
-  // WhatsApp clicks over time
-  const whatsappClicks = await db
-    .select({
-      date: sql<string>`DATE(${analytics.createdAt})`.as('click_date'),
-      count: sql<number>`COUNT(*)`,
-    })
-    .from(analytics)
-    .where(
-      and(
-        eq(analytics.partnerId, partnerId),
-        eq(analytics.eventType, "whatsapp_click"),
-        dateFilter
+    // WhatsApp clicks over time
+    db
+      .select({
+        date: sql<string>`DATE(${analytics.createdAt})`.as('click_date'),
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(analytics)
+      .where(
+        and(
+          eq(analytics.partnerId, partnerId),
+          eq(analytics.eventType, "whatsapp_click"),
+          dateFilter
+        )
       )
-    )
-    .groupBy(sql`click_date`)
-    .orderBy(sql`click_date`);
+      .groupBy(sql`click_date`)
+      .orderBy(sql`click_date`),
 
-  // Total metrics
-  const totalViews = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(analytics)
-    .where(
-      and(
-        eq(analytics.partnerId, partnerId),
-        eq(analytics.eventType, "profile_view"),
-        dateFilter
-      )
-    );
+    // Total views
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(analytics)
+      .where(
+        and(
+          eq(analytics.partnerId, partnerId),
+          eq(analytics.eventType, "profile_view"),
+          dateFilter
+        )
+      ),
 
-  const totalLeads = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(analytics)
-    .where(
-      and(
-        eq(analytics.partnerId, partnerId),
-        eq(analytics.eventType, "lead_generated"),
-        dateFilter
-      )
-    );
+    // Total leads
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(analytics)
+      .where(
+        and(
+          eq(analytics.partnerId, partnerId),
+          eq(analytics.eventType, "lead_generated"),
+          dateFilter
+        )
+      ),
 
-  const totalWhatsAppClicks = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(analytics)
-    .where(
-      and(
-        eq(analytics.partnerId, partnerId),
-        eq(analytics.eventType, "whatsapp_click"),
-        dateFilter
-      )
-    );
+    // Total WhatsApp clicks
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(analytics)
+      .where(
+        and(
+          eq(analytics.partnerId, partnerId),
+          eq(analytics.eventType, "whatsapp_click"),
+          dateFilter
+        )
+      ),
 
-  // Rating evolution (from reviews table)
-  const ratingEvolution = await db
-    .select({
-      date: sql<string>`DATE(${reviews.createdAt})`.as('rating_date'),
-      avgRating: sql<number>`AVG(${reviews.rating})`,
-    })
-    .from(reviews)
-    .where(eq(reviews.partnerId, partnerId))
-    .groupBy(sql`rating_date`)
-    .orderBy(sql`rating_date`);
+    // Rating evolution (from reviews table)
+    db
+      .select({
+        date: sql<string>`DATE(${reviews.createdAt})`.as('rating_date'),
+        avgRating: sql<number>`AVG(${reviews.rating})`,
+      })
+      .from(reviews)
+      .where(eq(reviews.partnerId, partnerId))
+      .groupBy(sql`rating_date`)
+      .orderBy(sql`rating_date`),
+  ]);
 
   // Conversion rate (leads / views)
-  const conversionRate = totalViews[0]?.count > 0 
-    ? ((totalLeads[0]?.count || 0) / totalViews[0].count) * 100 
+  const conversionRate = totalViews[0]?.count > 0
+    ? ((totalLeads[0]?.count || 0) / totalViews[0].count) * 100
     : 0;
 
   return {

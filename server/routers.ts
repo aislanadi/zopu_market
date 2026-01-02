@@ -161,19 +161,22 @@ const partnerRouter = router({
   getPublicProfile: publicProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const partner = await db.getPartnerById(input.id);
+      // Fetch all data in parallel for better performance
+      const [partner, offers, reviews] = await Promise.all([
+        db.getPartnerById(input.id),
+        db.getOffersByPartner(input.id),
+        db.getReviewsByPartner(input.id),
+      ]);
+
       if (!partner || partner.curationStatus !== "APPROVED") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Parceiro não encontrado" });
       }
-      
-      const offers = await db.getOffersByPartner(input.id);
-      const reviews = await db.getReviewsByPartner(input.id);
-      
+
       // Calcular rating médio
       const avgRating = reviews.length > 0
         ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
         : 0;
-      
+
       return {
         partner,
         offers,
