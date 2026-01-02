@@ -18,6 +18,7 @@ const authLimiter = rateLimit({
   message: { error: "Muitas tentativas. Tente novamente em 15 minutos." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false }, // Disable validation for cloud deployments
 });
 
 const apiLimiter = rateLimit({
@@ -26,6 +27,7 @@ const apiLimiter = rateLimit({
   message: { error: "Limite de requisições excedido. Tente novamente em breve." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 const uploadLimiter = rateLimit({
@@ -34,6 +36,7 @@ const uploadLimiter = rateLimit({
   message: { error: "Limite de uploads excedido. Tente novamente em breve." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 function isPortAvailable(port: number): Promise<boolean> {

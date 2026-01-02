@@ -268,22 +268,26 @@ const partnerRouter = router({
         });
 
         // Criar usuário automaticamente
+        console.log(`[Partner Approval] Iniciando criação de usuário para partnerId=${partner.id}, email=${partner.contactEmail}`);
         try {
           const dbInstance = await getDb();
           if (!dbInstance) {
             console.error(`[Partner Approval] Banco de dados não disponível`);
             return { success: true };
           }
-          
+
           // Verificar se já existe usuário com esse email
+          console.log(`[Partner Approval] Buscando usuário existente com email=${partner.contactEmail}`);
           const existingUsers = await dbInstance.select().from(users).where(eq(users.email, partner.contactEmail)).limit(1);
-          
+          console.log(`[Partner Approval] Usuários encontrados: ${existingUsers.length}`);
+
           if (existingUsers.length > 0) {
             // Usuário já existe, apenas atualizar role e partnerId
             const existingUser = existingUsers[0];
+            console.log(`[Partner Approval] Atualizando usuário existente id=${existingUser.id}`);
             await dbInstance.update(users)
-              .set({ 
-                role: "parceiro", 
+              .set({
+                role: "parceiro",
                 partnerId: partner.id,
                 updatedAt: new Date()
               })
@@ -291,19 +295,21 @@ const partnerRouter = router({
             console.log(`[Partner Approval] Usuário existente ${partner.contactEmail} atualizado com partnerId ${partner.id}`);
           } else {
             // Criar novo usuário
-            await dbInstance.insert(users).values({
+            console.log(`[Partner Approval] Criando novo usuário para ${partner.contactEmail}`);
+            const insertResult = await dbInstance.insert(users).values({
               email: partner.contactEmail,
               name: partner.contactName || partner.companyName,
               role: "parceiro",
               partnerId: partner.id,
-              loginMethod: "oauth",
+              loginMethod: "email", // Changed from "oauth" to "email" for local auth
               emailVerified: 1, // Consideramos verificado pois passou pela curadoria
               lastSignedIn: new Date(),
             });
-            console.log(`[Partner Approval] Novo usuário criado para ${partner.contactEmail} com partnerId ${partner.id}`);
+            console.log(`[Partner Approval] Novo usuário criado para ${partner.contactEmail} com partnerId ${partner.id}, insertId=${(insertResult as any).insertId}`);
           }
-        } catch (error) {
-          console.error(`[Partner Approval] Erro ao criar/atualizar usuário:`, error);
+        } catch (error: any) {
+          console.error(`[Partner Approval] Erro ao criar/atualizar usuário:`, error?.message || error);
+          console.error(`[Partner Approval] Stack:`, error?.stack);
           // Não lançar erro para não bloquear a aprovação
         }
 

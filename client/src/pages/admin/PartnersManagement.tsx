@@ -346,17 +346,19 @@ export default function PartnersManagement() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleStatusChange(partner.id, "APPROVED")}
+                          disabled={updateStatusMutation.isPending}
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          Aprovar
+                          {updateStatusMutation.isPending ? "Aprovando..." : "Aprovar"}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleStatusChange(partner.id, "REJECTED")}
+                          disabled={updateStatusMutation.isPending}
                         >
                           <XCircle className="h-4 w-4 mr-2" />
-                          Rejeitar
+                          {updateStatusMutation.isPending ? "Rejeitando..." : "Rejeitar"}
                         </Button>
                       </>
                     )}
