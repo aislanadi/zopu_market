@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
-import { createServer } from "http";
-import net from "net";
+import { createServer } from "node:http";
+import net from "node:net";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
