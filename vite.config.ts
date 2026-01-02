@@ -20,6 +20,10 @@ export default defineConfig({
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
   },
+  define: {
+    // Polyfill for crypto in browser
+    global: "globalThis",
+  },
   envDir: path.resolve(__dirname),
   root: path.resolve(__dirname, "client"),
   publicDir: path.resolve(__dirname, "client", "public"),

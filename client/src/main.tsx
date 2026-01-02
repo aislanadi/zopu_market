@@ -1,3 +1,8 @@
+// Polyfill for crypto in older browsers or problematic environments
+if (typeof globalThis.crypto === 'undefined') {
+  (globalThis as any).crypto = window.crypto || (window as any).msCrypto;
+}
+
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
