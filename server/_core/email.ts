@@ -43,9 +43,11 @@ export function getPartnerApprovedEmailTemplate(data: {
   partnerName: string;
   companyName: string;
   loginUrl: string;
+  email: string;
+  temporaryPassword: string;
 }): { subject: string; html: string; text: string } {
   const subject = "🎉 Seu cadastro foi aprovado no ZOPUMarket!";
-  
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -56,7 +58,11 @@ export function getPartnerApprovedEmailTemplate(data: {
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+        .credentials { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .credentials h4 { margin: 0 0 15px 0; color: #495057; }
+        .credentials p { margin: 8px 0; font-family: monospace; font-size: 14px; }
         .button { display: inline-block; background: #FF6B6B; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        .warning { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin: 15px 0; font-size: 13px; }
         .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
       </style>
     </head>
@@ -67,23 +73,34 @@ export function getPartnerApprovedEmailTemplate(data: {
         </div>
         <div class="content">
           <p>Seu cadastro como parceiro foi aprovado com sucesso!</p>
-          
+
           <p><strong>Empresa:</strong> ${data.companyName}</p>
-          
+
+          <div class="credentials">
+            <h4>🔐 Suas credenciais de acesso:</h4>
+            <p><strong>Email:</strong> ${data.email}</p>
+            <p><strong>Senha temporária:</strong> ${data.temporaryPassword}</p>
+          </div>
+
+          <div class="warning">
+            ⚠️ <strong>Importante:</strong> Recomendamos que você altere sua senha após o primeiro login para maior segurança.
+          </div>
+
           <h3>Próximos passos:</h3>
           <ol>
             <li>Acesse o painel de parceiro usando o botão abaixo</li>
+            <li>Faça login com suas credenciais</li>
             <li>Complete seu perfil com logo e descrição</li>
             <li>Cadastre suas primeiras ofertas</li>
             <li>Configure a integração com Bitrix24 (opcional)</li>
           </ol>
-          
+
           <div style="text-align: center;">
             <a href="${data.loginUrl}" class="button">Acessar Painel de Parceiro</a>
           </div>
-          
+
           <p>Estamos animados para ter você como parceiro do ZOPUMarket!</p>
-          
+
           <p>Se tiver dúvidas, responda este email ou entre em contato com nossa equipe.</p>
         </div>
         <div class="footer">
@@ -101,11 +118,18 @@ Seu cadastro como parceiro foi aprovado com sucesso!
 
 Empresa: ${data.companyName}
 
+🔐 SUAS CREDENCIAIS DE ACESSO:
+Email: ${data.email}
+Senha temporária: ${data.temporaryPassword}
+
+⚠️ IMPORTANTE: Recomendamos que você altere sua senha após o primeiro login.
+
 Próximos passos:
 1. Acesse o painel de parceiro: ${data.loginUrl}
-2. Complete seu perfil com logo e descrição
-3. Cadastre suas primeiras ofertas
-4. Configure a integração com Bitrix24 (opcional)
+2. Faça login com suas credenciais
+3. Complete seu perfil com logo e descrição
+4. Cadastre suas primeiras ofertas
+5. Configure a integração com Bitrix24 (opcional)
 
 Estamos animados para ter você como parceiro do ZOPUMarket!
 

@@ -1,14 +1,22 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { nanoid } from "nanoid";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { localAuthRouter } from "./localAuthRouter";
+import { hashPassword } from "./_core/localAuth";
 import * as db from "./db";
 import { createAuditLog, getDb } from "./db";
 import { clientLeads, users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+
+// Generate a secure temporary password
+function generateTemporaryPassword(): string {
+  // Generate a 12-character password with mixed characters
+  return nanoid(12);
+}
 
 // ============ MIDDLEWARE HELPERS ============
 
@@ -243,21 +251,79 @@ const partnerRouter = router({
       // Se aprovado, enviar email de boas-vindas
       if (input.status === "APPROVED" && oldStatus !== "APPROVED") {
         if (!partner.contactEmail) {
-          throw new TRPCError({ 
-            code: "BAD_REQUEST", 
-            message: "Email de contato é obrigatório para aprovar parceiro" 
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Email de contato é obrigatório para aprovar parceiro"
           });
         }
 
-        const { sendEmail, getPartnerApprovedEmailTemplate } = await import("./_core/email");
+        // Gerar senha temporária
+        const temporaryPassword = generateTemporaryPassword();
+        const passwordHash = await hashPassword(temporaryPassword);
 
-        // Enviar email de aprovação
+        // Criar usuário automaticamente ANTES de enviar o email
+        console.log(`[Partner Approval] Iniciando criação de usuário para partnerId=${partner.id}, email=${partner.contactEmail}`);
+        let userCreated = false;
+        try {
+          const dbInstance = await getDb();
+          if (!dbInstance) {
+            console.error(`[Partner Approval] Banco de dados não disponível`);
+            throw new Error("Banco de dados não disponível");
+          }
+
+          // Verificar se já existe usuário com esse email
+          console.log(`[Partner Approval] Buscando usuário existente com email=${partner.contactEmail}`);
+          const existingUsers = await dbInstance.select().from(users).where(eq(users.email, partner.contactEmail)).limit(1);
+          console.log(`[Partner Approval] Usuários encontrados: ${existingUsers.length}`);
+
+          if (existingUsers.length > 0) {
+            // Usuário já existe, atualizar role, partnerId e senha
+            const existingUser = existingUsers[0];
+            console.log(`[Partner Approval] Atualizando usuário existente id=${existingUser.id}`);
+            await dbInstance.update(users)
+              .set({
+                role: "parceiro",
+                partnerId: partner.id,
+                passwordHash: passwordHash,
+                emailVerified: 1,
+                updatedAt: new Date()
+              })
+              .where(eq(users.id, existingUser.id));
+            console.log(`[Partner Approval] Usuário existente ${partner.contactEmail} atualizado com partnerId ${partner.id}`);
+            userCreated = true;
+          } else {
+            // Criar novo usuário com senha
+            console.log(`[Partner Approval] Criando novo usuário para ${partner.contactEmail}`);
+            const insertResult = await dbInstance.insert(users).values({
+              email: partner.contactEmail,
+              passwordHash: passwordHash,
+              name: partner.contactName || partner.companyName,
+              role: "parceiro",
+              partnerId: partner.id,
+              loginMethod: "email",
+              emailVerified: 1,
+              lastSignedIn: new Date(),
+            });
+            console.log(`[Partner Approval] Novo usuário criado para ${partner.contactEmail} com partnerId ${partner.id}, insertId=${(insertResult as any).insertId}`);
+            userCreated = true;
+          }
+        } catch (error: any) {
+          console.error(`[Partner Approval] Erro ao criar/atualizar usuário:`, error?.message || error);
+          console.error(`[Partner Approval] Stack:`, error?.stack);
+          // Não lançar erro, mas registrar falha
+          userCreated = false;
+        }
+
+        // Enviar email de aprovação com credenciais
+        const { sendEmail, getPartnerApprovedEmailTemplate } = await import("./_core/email");
         const appUrl = process.env.APP_URL || "https://zopumarket.com";
         const loginUrl = `${appUrl}/login`;
         const emailTemplate = getPartnerApprovedEmailTemplate({
           partnerName: partner.contactName || "Parceiro",
           companyName: partner.companyName,
           loginUrl,
+          email: partner.contactEmail,
+          temporaryPassword: userCreated ? temporaryPassword : "[Erro ao criar usuário - entre em contato com o suporte]",
         });
 
         await sendEmail({
@@ -267,53 +333,7 @@ const partnerRouter = router({
           text: emailTemplate.text,
         });
 
-        // Criar usuário automaticamente
-        console.log(`[Partner Approval] Iniciando criação de usuário para partnerId=${partner.id}, email=${partner.contactEmail}`);
-        try {
-          const dbInstance = await getDb();
-          if (!dbInstance) {
-            console.error(`[Partner Approval] Banco de dados não disponível`);
-            return { success: true };
-          }
-
-          // Verificar se já existe usuário com esse email
-          console.log(`[Partner Approval] Buscando usuário existente com email=${partner.contactEmail}`);
-          const existingUsers = await dbInstance.select().from(users).where(eq(users.email, partner.contactEmail)).limit(1);
-          console.log(`[Partner Approval] Usuários encontrados: ${existingUsers.length}`);
-
-          if (existingUsers.length > 0) {
-            // Usuário já existe, apenas atualizar role e partnerId
-            const existingUser = existingUsers[0];
-            console.log(`[Partner Approval] Atualizando usuário existente id=${existingUser.id}`);
-            await dbInstance.update(users)
-              .set({
-                role: "parceiro",
-                partnerId: partner.id,
-                updatedAt: new Date()
-              })
-              .where(eq(users.id, existingUser.id));
-            console.log(`[Partner Approval] Usuário existente ${partner.contactEmail} atualizado com partnerId ${partner.id}`);
-          } else {
-            // Criar novo usuário
-            console.log(`[Partner Approval] Criando novo usuário para ${partner.contactEmail}`);
-            const insertResult = await dbInstance.insert(users).values({
-              email: partner.contactEmail,
-              name: partner.contactName || partner.companyName,
-              role: "parceiro",
-              partnerId: partner.id,
-              loginMethod: "email", // Changed from "oauth" to "email" for local auth
-              emailVerified: 1, // Consideramos verificado pois passou pela curadoria
-              lastSignedIn: new Date(),
-            });
-            console.log(`[Partner Approval] Novo usuário criado para ${partner.contactEmail} com partnerId ${partner.id}, insertId=${(insertResult as any).insertId}`);
-          }
-        } catch (error: any) {
-          console.error(`[Partner Approval] Erro ao criar/atualizar usuário:`, error?.message || error);
-          console.error(`[Partner Approval] Stack:`, error?.stack);
-          // Não lançar erro para não bloquear a aprovação
-        }
-
-        console.log(`[Partner Approval] Email de aprovação enviado para ${partner.contactEmail}.`);
+        console.log(`[Partner Approval] Email de aprovação enviado para ${partner.contactEmail}. Usuário criado: ${userCreated}`);
       }
 
       // Se rejeitado, enviar email de rejeição
