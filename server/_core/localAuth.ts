@@ -3,10 +3,9 @@
  */
 
 import bcrypt from "bcryptjs";
-import { randomBytes } from "node:crypto";
+import { nanoid } from "nanoid";
 
 const SALT_ROUNDS = 10;
-const TOKEN_BYTES = 32;
 const TOKEN_EXPIRY_HOURS = 24;
 
 /**
@@ -25,9 +24,11 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 /**
  * Generate a secure random token for email verification or password reset
+ * Uses nanoid which works in both Node.js and browser environments
  */
 export function generateToken(): string {
-  return randomBytes(TOKEN_BYTES).toString("hex");
+  // Generate a 64-character token (equivalent security to 32 random bytes in hex)
+  return nanoid(64);
 }
 
 /**
