@@ -25,6 +25,19 @@ import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+/**
+ * Safely parse JSON with fallback to default value
+ * Prevents crashes from malformed JSON in database
+ */
+function safeJsonParse<T>(json: string | null | undefined, defaultValue: T): T {
+  if (!json) return defaultValue;
+  try {
+    return JSON.parse(json) as T;
+  } catch {
+    return defaultValue;
+  }
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -871,7 +884,7 @@ export async function updateCommunityFavoriteBadges() {
       .limit(1);
 
     if (partner.length > 0) {
-      const currentBadges = partner[0].badges ? JSON.parse(partner[0].badges) : [];
+      const currentBadges = safeJsonParse<string[]>(partner[0].badges, []);
       
       // Adicionar badge se não existir
       if (!currentBadges.includes("community_favorite")) {
@@ -1464,7 +1477,7 @@ export async function validateCoupon(params: {
   if (params.offerId) {
     // Prioridade 1: Verifica ofertas específicas
     if (coupon.applicableOfferIds) {
-      const applicableIds = JSON.parse(coupon.applicableOfferIds);
+      const applicableIds = safeJsonParse<number[]>(coupon.applicableOfferIds, []);
       if (applicableIds.length > 0) {
         // Se há ofertas específicas, verifica apenas isso
         if (!applicableIds.includes(params.offerId)) {
@@ -1474,13 +1487,13 @@ export async function validateCoupon(params: {
       } else {
         // Se a lista de ofertas está vazia, verifica categorias
         if (coupon.applicableCategoryIds) {
-          const applicableCatIds = JSON.parse(coupon.applicableCategoryIds);
+          const applicableCatIds = safeJsonParse<number[]>(coupon.applicableCategoryIds, []);
           if (applicableCatIds.length > 0) {
             const offerResult = await db
               .select({ categoryId: offers.categoryId })
               .from(offers)
               .where(eq(offers.id, params.offerId));
-            
+
             const offerCategoryId = offerResult[0]?.categoryId;
             if (!offerCategoryId || !applicableCatIds.includes(offerCategoryId)) {
               return { valid: false, error: "Cupom não aplicável a esta categoria" };
@@ -1491,13 +1504,13 @@ export async function validateCoupon(params: {
     } else {
       // Se não há lista de ofertas, verifica categorias
       if (coupon.applicableCategoryIds) {
-        const applicableCatIds = JSON.parse(coupon.applicableCategoryIds);
+        const applicableCatIds = safeJsonParse<number[]>(coupon.applicableCategoryIds, []);
         if (applicableCatIds.length > 0) {
           const offerResult = await db
             .select({ categoryId: offers.categoryId })
             .from(offers)
             .where(eq(offers.id, params.offerId));
-          
+
           const offerCategoryId = offerResult[0]?.categoryId;
           if (!offerCategoryId || !applicableCatIds.includes(offerCategoryId)) {
             return { valid: false, error: "Cupom não aplicável a esta categoria" };
@@ -1509,7 +1522,7 @@ export async function validateCoupon(params: {
 
   // Verifica ofertas excluídas
   if (params.offerId && coupon.excludedOfferIds) {
-    const excludedIds = JSON.parse(coupon.excludedOfferIds);
+    const excludedIds = safeJsonParse<number[]>(coupon.excludedOfferIds, []);
     if (excludedIds.includes(params.offerId)) {
       return { valid: false, error: "Cupom não aplicável a esta oferta" };
     }
@@ -1517,7 +1530,7 @@ export async function validateCoupon(params: {
 
   // Verifica método de pagamento
   if (params.paymentMethod && coupon.applicablePaymentMethods) {
-    const methods = JSON.parse(coupon.applicablePaymentMethods);
+    const methods = safeJsonParse<string[]>(coupon.applicablePaymentMethods, []);
     if (!methods.includes(params.paymentMethod)) {
       return { valid: false, error: "Cupom não aplicável a este método de pagamento" };
     }

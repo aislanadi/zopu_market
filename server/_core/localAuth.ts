@@ -57,11 +57,35 @@ export function isValidEmail(email: string): boolean {
 
 /**
  * Validate password strength
- * Requirements: min 8 chars, at least one letter and one number
+ * Requirements: min 8 chars, at least one uppercase, one lowercase, one number, and one special character
  */
 export function isValidPassword(password: string): boolean {
   if (password.length < 8) return false;
-  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
-  return hasLetter && hasNumber;
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  return hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+}
+
+/**
+ * Get password validation error message
+ */
+export function getPasswordValidationError(password: string): string | null {
+  if (password.length < 8) {
+    return "Senha deve ter no mínimo 8 caracteres";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Senha deve conter pelo menos uma letra maiúscula";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "Senha deve conter pelo menos uma letra minúscula";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "Senha deve conter pelo menos um número";
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return "Senha deve conter pelo menos um caractere especial (!@#$%^&*...)";
+  }
+  return null;
 }

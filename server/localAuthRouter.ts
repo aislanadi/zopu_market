@@ -16,12 +16,13 @@ import {
   isTokenExpired,
   isValidEmail,
   isValidPassword,
+  getPasswordValidationError,
 } from "./_core/localAuth";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 
 const JWT_SECRET = new TextEncoder().encode(ENV.jwtSecret);
-const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // Reduced from 1 year for security
 
 /**
  * Create session token for authenticated user
@@ -35,7 +36,7 @@ async function createSessionToken(userId: number, email: string, name: string | 
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("365d")
+    .setExpirationTime("30d") // Reduced from 365d for security
     .sign(JWT_SECRET);
 }
 
@@ -60,10 +61,11 @@ export const localAuthRouter = router({
       }
 
       // Validate password strength
-      if (!isValidPassword(input.password)) {
+      const passwordError = getPasswordValidationError(input.password);
+      if (passwordError) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Senha deve ter no mínimo 8 caracteres, incluindo letras e números",
+          message: passwordError,
         });
       }
 
@@ -111,16 +113,11 @@ export const localAuthRouter = router({
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax" as const,
-        maxAge: ONE_YEAR_MS,
+        maxAge: THIRTY_DAYS_MS,
         path: "/",
       };
-      
-      console.log("[Register] Setting cookie with options:", cookieOptions);
-      console.log("[Register] Session token (first 20 chars):", sessionToken.substring(0, 20));
-      
+
       ctx.res.cookie("app_session_id", sessionToken, cookieOptions);
-      
-      console.log("[Register] Cookie set successfully for user:", input.email);
 
       return {
         success: true,
@@ -180,16 +177,11 @@ export const localAuthRouter = router({
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax" as const,
-        maxAge: ONE_YEAR_MS,
+        maxAge: THIRTY_DAYS_MS,
         path: "/",
       };
-      
-      console.log("[Login] Setting cookie with options:", cookieOptions);
-      console.log("[Login] Session token (first 20 chars):", sessionToken.substring(0, 20));
-      
+
       ctx.res.cookie("app_session_id", sessionToken, cookieOptions);
-      
-      console.log("[Login] Cookie set successfully for user:", user.email || 'unknown');
 
       return {
         success: true,
@@ -246,8 +238,6 @@ export const localAuthRouter = router({
       return {
         success: true,
         message: "Se o email existir, você receberá instruções para redefinir a senha",
-        // DEV ONLY: return token for testing
-        ...(process.env.NODE_ENV === "development" && { resetToken }),
       };
     }),
 
@@ -264,10 +254,11 @@ export const localAuthRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       // Validate password strength
-      if (!isValidPassword(input.newPassword)) {
+      const passwordError = getPasswordValidationError(input.newPassword);
+      if (passwordError) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Senha deve ter no mínimo 8 caracteres, incluindo letras e números",
+          message: passwordError,
         });
       }
 
@@ -391,8 +382,6 @@ export const localAuthRouter = router({
       return {
         success: true,
         message: "Se o email existir, você receberá um novo link de verificação",
-        // DEV ONLY: return token for testing
-        ...(process.env.NODE_ENV === "development" && { verificationToken: emailVerificationToken }),
       };
     }),
 });

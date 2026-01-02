@@ -3,12 +3,38 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { uploadRouter } from "../upload";
+
+// Rate limiters for security
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per window for auth routes
+  message: { error: "Muitas tentativas. Tente novamente em 15 minutos." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute for general API
+  message: { error: "Limite de requisições excedido. Tente novamente em breve." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 uploads per minute
+  message: { error: "Limite de uploads excedido. Tente novamente em breve." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -39,11 +65,20 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Apply rate limiting to auth routes
+  app.use("/api/trpc/localAuth", authLimiter);
+  app.use("/api/oauth", authLimiter);
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
-  // Upload endpoint
+
+  // Upload endpoint with rate limiting
+  app.use("/api/upload", uploadLimiter);
   app.use("/api", uploadRouter);
-  // tRPC API
+
+  // tRPC API with general rate limiting
+  app.use("/api/trpc", apiLimiter);
   app.use(
     "/api/trpc",
     createExpressMiddleware({

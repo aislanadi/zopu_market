@@ -22,9 +22,6 @@ export type TrpcContext = {
 async function authenticateLocalToken(req: CreateExpressContextOptions["req"]): Promise<User | null> {
   try {
     const token = req.cookies?.[COOKIE_NAME];
-    console.log("[Auth Debug] Cookie name:", COOKIE_NAME);
-    console.log("[Auth Debug] All cookies:", req.cookies);
-    console.log("[Auth Debug] Token found:", token ? "YES" : "NO");
     if (!token) return null;
 
     // Verify JWT token
@@ -38,10 +35,8 @@ async function authenticateLocalToken(req: CreateExpressContextOptions["req"]): 
     if (!db) return null;
     const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
-    console.log("[Auth Debug] User found:", user ? `YES (id: ${user.id}, email: ${user.email})` : "NO");
     return user || null;
-  } catch (error) {
-    console.log("[Auth Debug] Error:", error);
+  } catch {
     return null;
   }
 }
@@ -51,35 +46,17 @@ export async function createContext(
 ): Promise<TrpcContext> {
   let user: User | null = null;
 
-  console.log("[Context] Creating context for:", opts.req.method, opts.req.url);
-  console.log("[Context] Cookies:", opts.req.cookies);
-  console.log("[Context] Headers:", opts.req.headers.cookie);
-
   // Try local authentication first (JWT token from email/password login)
   user = await authenticateLocalToken(opts.req);
-  
-  if (user) {
-    console.log("[Context] Local auth SUCCESS:", { id: user.id, email: user.email, role: user.role });
-  } else {
-    console.log("[Context] Local auth FAILED, trying OAuth...");
-  }
 
   // Fallback to OAuth authentication if local auth failed
   if (!user) {
     try {
       user = await sdk.authenticateRequest(opts.req);
-      if (user) {
-        console.log("[Context] OAuth auth SUCCESS:", { id: user.id, email: user.email, role: user.role });
-      }
-    } catch (error) {
-      console.log("[Context] OAuth auth FAILED:", error);
+    } catch {
       // Authentication is optional for public procedures.
       user = null;
     }
-  }
-  
-  if (!user) {
-    console.log("[Context] NO USER AUTHENTICATED");
   }
 
   return {
