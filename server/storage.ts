@@ -1,5 +1,5 @@
-// S3 storage helpers for file uploads
-// Uses AWS S3 directly for file storage
+// S3-compatible storage helpers for file uploads
+// Works with AWS S3 or Cloudflare R2
 
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -11,19 +11,26 @@ let s3Client: S3Client | null = null;
 function getS3Client(): S3Client {
   if (s3Client) return s3Client;
 
-  if (!ENV.s3Bucket || !ENV.s3Region || !ENV.s3AccessKeyId || !ENV.s3SecretAccessKey) {
+  if (!ENV.s3Bucket || !ENV.s3AccessKeyId || !ENV.s3SecretAccessKey) {
     throw new Error(
-      "S3 credentials missing: set S3_BUCKET, S3_REGION, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY"
+      "S3 credentials missing: set S3_BUCKET, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY"
     );
   }
 
-  s3Client = new S3Client({
-    region: ENV.s3Region,
+  const config: ConstructorParameters<typeof S3Client>[0] = {
+    region: ENV.s3Region || "auto",
     credentials: {
       accessKeyId: ENV.s3AccessKeyId,
       secretAccessKey: ENV.s3SecretAccessKey,
     },
-  });
+  };
+
+  // Add custom endpoint for Cloudflare R2 or other S3-compatible services
+  if (ENV.s3Endpoint) {
+    config.endpoint = ENV.s3Endpoint;
+  }
+
+  s3Client = new S3Client(config);
 
   return s3Client;
 }
@@ -33,7 +40,7 @@ function normalizeKey(relKey: string): string {
 }
 
 /**
- * Upload a file to S3
+ * Upload a file to S3/R2
  */
 export async function storagePut(
   relKey: string,
@@ -52,15 +59,24 @@ export async function storagePut(
 
   await client.send(command);
 
-  // Return the public URL (assuming bucket is configured for public access)
-  // Or use a CloudFront distribution URL if available
-  const url = `https://${ENV.s3Bucket}.s3.${ENV.s3Region}.amazonaws.com/${key}`;
+  // Build public URL
+  let url: string;
+  if (ENV.s3PublicUrl) {
+    // Use configured public URL (Cloudflare R2 public bucket)
+    url = `${ENV.s3PublicUrl.replace(/\/+$/, "")}/${key}`;
+  } else if (ENV.s3Endpoint) {
+    // Fallback for custom endpoints
+    url = `${ENV.s3Endpoint}/${ENV.s3Bucket}/${key}`;
+  } else {
+    // Default AWS S3 URL
+    url = `https://${ENV.s3Bucket}.s3.${ENV.s3Region}.amazonaws.com/${key}`;
+  }
 
   return { key, url };
 }
 
 /**
- * Get a presigned URL for downloading a file from S3
+ * Get a presigned URL for downloading a file from S3/R2
  */
 export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
   const client = getS3Client();
