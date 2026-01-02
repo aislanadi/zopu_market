@@ -58,7 +58,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  
+
+  // Trust proxy for Railway/cloud deployments (required for express-rate-limit)
+  app.set('trust proxy', 1);
+
   // Configure cookie parser FIRST
   app.use(cookieParser());
   
